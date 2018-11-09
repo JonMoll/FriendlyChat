@@ -2,10 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="eb546e48-53d5-40dd-a426-29d9a91d4094" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.firebase/hosting..cache" beforeDir="false" afterPath="$PROJECT_DIR$/.firebase/hosting..cache" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/database-rules.json" beforeDir="false" afterPath="$PROJECT_DIR$/database-rules.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/firebase_backup.json" beforeDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/.tmp/" />
     <ignored path="$PROJECT_DIR$/temp/" />
@@ -244,15 +243,16 @@
       <updated>1540570028919</updated>
       <workItem from="1540570031825" duration="6823000" />
       <workItem from="1540936354780" duration="1266000" />
-      <workItem from="1541778783812" duration="6496000" />
+      <workItem from="1541778783812" duration="7100000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="14585000" />
+    <option name="totallyTimeSpent" value="15189000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
+    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.17300381" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
