@@ -61,6 +61,18 @@ function loadMessages() {
     firebase.database().ref('/messages/').limitToLast(12).on('child_changed', callback);
 }
 
+// Loads issues history and listens for upcoming ones.
+function loadIssues() {
+  // Loads the last 12 issues and listen for new ones.
+  var callback = function(snap) {
+    var data = snap.val();
+    displayIssue(snap.key, data.text);
+  };
+
+  firebase.database().ref('/issues/').limitToLast(12).on('child_added', callback);
+  firebase.database().ref('/issues/').limitToLast(12).on('child_changed', callback);
+}
+
 // Saves a new message on the Firebase DB.
 function saveMessage(messageText) {
     // Add a new message entry to the Firebase Database.
@@ -71,6 +83,18 @@ function saveMessage(messageText) {
     }).catch(function(error) {
         console.error('Error writing new message to Firebase Database', error);
     });
+}
+
+// Saves a new message on the Firebase DB.
+function saveIssue(issueNameText) {
+  // Add a new message entry to the Firebase Database.
+  return firebase.database().ref('/issues/').push({
+    name: getUserName(),
+    text: issueNameText,
+    profilePicUrl: getProfilePicUrl()
+  }).catch(function(error) {
+    console.error('Error writing new message to Firebase Database', error);
+  });
 }
 
 // Saves a new message containing an image in Firebase.
@@ -163,6 +187,19 @@ function onMessageFormSubmit(e) {
   }
 }
 
+// Triggered when the send new issue form is submitted.
+function onIssueFormSubmit(e) {
+  e.preventDefault();
+  // Check that the user entered a message and is signed in.
+  if (issueNameInputElement.value && checkSignedInWithMessage()) {
+    saveIssue(issueNameInputElement.value).then(function() {
+      // Clear message text field and re-enable the SEND button.
+      resetMaterialTextfield(issueNameInputElement);
+      toggleButton();
+    });
+  }
+}
+
 // Triggers when the auth state change for instance when the user signs-in or signs-out.
 function authStateObserver(user) {
   if (user) { // User is signed in!
@@ -225,6 +262,12 @@ var MESSAGE_TEMPLATE =
       '<div class="name"></div>' +
     '</div>';
 
+// Template for messages.
+var ISSUE_TEMPLATE =
+  '<div class="message-container">' +
+  '<div class="message"></div>' +
+  '</div>';
+
 // A loading image URL.
 var LOADING_IMAGE_URL = 'https://www.google.com/images/spin-32.gif?a';
 
@@ -263,6 +306,30 @@ function displayMessage(key, name, text, picUrl, imageUrl) {
   messageInputElement.focus();
 }
 
+// Displays a Issues in the UI.
+function displayIssue(key, text) {
+  var div = document.getElementById(key);
+  // If an element for that issue does not exists yet we create it.
+  if (!div) {
+    var container = document.createElement('div');
+    container.innerHTML = ISSUE_TEMPLATE;
+    div = container.firstChild;
+    div.setAttribute('id', key);
+    issuesListElement.appendChild(div);
+  }
+
+  var messageElement = div.querySelector('.message');
+  if (text) { // If the message is text.
+    messageElement.textContent = text;
+    // Replace all line breaks by <br>.
+    messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
+  }
+  // Show the card fading-in and scroll to view the new message.
+  setTimeout(function() {div.classList.add('visible')}, 1);
+  issuesListElement.scrollTop = issuesListElement.scrollHeight;
+  issueNameInputElement.focus();
+}
+
 // Enables or disables the submit button depending on the values of the input
 // fields.
 function toggleButton() {
@@ -270,6 +337,12 @@ function toggleButton() {
     submitButtonElement.removeAttribute('disabled');
   } else {
     submitButtonElement.setAttribute('disabled', 'true');
+  }
+
+  if (issueNameInputElement.value) {
+    submitIssueButtonElement.removeAttribute('disabled');
+  } else {
+    submitIssueButtonElement.setAttribute('disabled', 'true');
   }
 }
 
@@ -287,9 +360,13 @@ checkSetup();
 
 // Shortcuts to DOM Elements.
 var messageListElement = document.getElementById('messages');
+var issuesListElement = document.getElementById('issues');
 var messageFormElement = document.getElementById('message-form');
 var messageInputElement = document.getElementById('message');
 var submitButtonElement = document.getElementById('submit');
+var issueFormElement = document.getElementById('issue-form');
+var issueNameInputElement = document.getElementById('issue-name');
+var submitIssueButtonElement = document.getElementById('submit-issue');
 var imageButtonElement = document.getElementById('submitImage');
 var imageFormElement = document.getElementById('image-form');
 var mediaCaptureElement = document.getElementById('mediaCapture');
@@ -301,12 +378,16 @@ var signInSnackbarElement = document.getElementById('must-signin-snackbar');
 
 // Saves message on form submit.
 messageFormElement.addEventListener('submit', onMessageFormSubmit);
+issueFormElement.addEventListener('submit', onIssueFormSubmit);
 signOutButtonElement.addEventListener('click', signOut);
 signInButtonElement.addEventListener('click', signIn);
 
 // Toggle for the button.
 messageInputElement.addEventListener('keyup', toggleButton);
 messageInputElement.addEventListener('change', toggleButton);
+
+issueNameInputElement.addEventListener('keyup', toggleButton);
+issueNameInputElement.addEventListener('change', toggleButton);
 
 // Events for image upload.
 imageButtonElement.addEventListener('click', function(e) {
@@ -320,3 +401,6 @@ initFirebaseAuth();
 
 // We load currently existing chat messages and listen to new ones.
 loadMessages();
+
+// We load currently existing issues and listen to new ones.
+loadIssues();
