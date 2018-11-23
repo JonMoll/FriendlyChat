@@ -61,6 +61,32 @@ function loadMessages() {
     firebase.database().ref('/messages/').limitToLast(12).on('child_changed', callback);
 }
 
+// Loads issues history and listens for upcoming ones.
+function loadIssues() {
+  // Loads the last 12 issues and listen for new ones.
+  var callback = function(snap) {
+    var data = snap.val();
+    displayIssue(snap.key, data.name, data.description, data.member);
+  };
+
+  firebase.database().ref('/issues/').limitToLast(12).on('child_added', callback);
+  firebase.database().ref('/issues/').limitToLast(12).on('child_changed', callback);
+}
+
+// Loads deadline history and listens for upcoming ones.
+function loadDeadline() {
+  // Loads the last 12 issues and listen for new ones.
+  var callback = function(snap) {
+    var data = snap.val();
+    var days_left_int = parseInt(data.day) - current_d;
+    var days_left_str = "<br> (" + days_left_int + " days left)";
+    deadlineElement.innerHTML = "Deadline: " + data.month + "/" + data.day + "/" + data.year + days_left_str;
+  };
+
+  firebase.database().ref('/deadline/').limitToLast(12).on('child_added', callback);
+  firebase.database().ref('/deadline/').limitToLast(12).on('child_changed', callback);
+}
+
 // Saves a new message on the Firebase DB.
 function saveMessage(messageText) {
     // Add a new message entry to the Firebase Database.
@@ -71,6 +97,30 @@ function saveMessage(messageText) {
     }).catch(function(error) {
         console.error('Error writing new message to Firebase Database', error);
     });
+}
+
+// Saves a new message on the Firebase DB.
+function saveIssue(issueNameText, issueDescriptionText, issueMemberText) {
+  // Add a new message entry to the Firebase Database.
+  return firebase.database().ref('/issues/').push({
+    name: issueNameText,
+    description: issueDescriptionText,
+    member: issueMemberText
+  }).catch(function(error) {
+    console.error('Error writing new issue to Firebase Database', error);
+  });
+}
+
+// Saves a new deadline on the Firebase DB.
+function saveDeadline(month, day, year) {
+  // Add a new message entry to the Firebase Database.
+  return firebase.database().ref('/deadline/').push({
+    month: month,
+    day: day,
+    year: year
+  }).catch(function(error) {
+    console.error('Error writing new deadline to Firebase Database', error);
+  });
 }
 
 // Saves a new message containing an image in Firebase.
@@ -163,6 +213,39 @@ function onMessageFormSubmit(e) {
   }
 }
 
+// Triggered when the send new issue form is submitted.
+function onIssueFormSubmit(e) {
+  e.preventDefault();
+  // Check that the user entered a message and is signed in.
+  if (issueNameInputElement.value &&
+      issueDescriptionInputElement.value &&
+      issueMemberInputElement.value &&
+      checkSignedInWithMessage()) {
+    saveIssue(issueNameInputElement.value,
+              issueDescriptionInputElement.value,
+              issueMemberInputElement.value).then(function() {
+      // Clear message text field and re-enable the SEND button.
+      resetMaterialTextfield(issueNameInputElement);
+      resetMaterialTextfield(issueDescriptionInputElement);
+      resetMaterialTextfield(issueMemberInputElement);
+      toggleButtonIssue();
+    });
+  }
+}
+
+// Triggered when the send new deadline form is submitted.
+function onDeadlineFormSubmit(e) {
+  e.preventDefault();
+  // Check that the user entered a message and is signed in.
+  if (deadlineInputElement.value && checkSignedInWithMessage()) {
+    saveDeadline(current_m, current_d + parseInt(deadlineInputElement.value), current_y).then(function() {
+      // Clear message text field and re-enable the SEND button.
+      resetMaterialTextfield(deadlineInputElement);
+      toggleButtonDeadline();
+    });
+  }
+}
+
 // Triggers when the auth state change for instance when the user signs-in or signs-out.
 function authStateObserver(user) {
   if (user) { // User is signed in!
@@ -225,6 +308,14 @@ var MESSAGE_TEMPLATE =
       '<div class="name"></div>' +
     '</div>';
 
+// Template for messages.
+var ISSUE_TEMPLATE =
+  '<div class="message-container">' +
+  '<div class="issue-name"></div>' +
+  '<div class="issue-description"></div>' +
+  '<div class="issue-member"></div>' +
+  '</div>';
+
 // A loading image URL.
 var LOADING_IMAGE_URL = 'https://www.google.com/images/spin-32.gif?a';
 
@@ -263,6 +354,40 @@ function displayMessage(key, name, text, picUrl, imageUrl) {
   messageInputElement.focus();
 }
 
+// Displays a Issues in the UI.
+function displayIssue(key, name, description, member) {
+  var div = document.getElementById(key);
+  // If an element for that issue does not exists yet we create it.
+  if (!div) {
+    var container = document.createElement('div');
+    container.innerHTML = ISSUE_TEMPLATE;
+    div = container.firstChild;
+    div.setAttribute('id', key);
+    issuesListElement.appendChild(div);
+  }
+
+  var messageElement = div.querySelector('.issue-name');
+  var descriptionElement = div.querySelector('.issue-description');
+  var memberElement = div.querySelector('.issue-member');
+
+  if (name) { // If the message is text.
+    messageElement.textContent = name;
+    // Replace all line breaks by <br>.
+    messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
+  }
+  if (description) {
+    descriptionElement.textContent = description;
+  }
+  if (member) {
+    memberElement.textContent = "Assigned member: " + member;
+  }
+
+  // Show the card fading-in and scroll to view the new message.
+  setTimeout(function() {div.classList.add('visible')}, 1);
+  issuesListElement.scrollTop = issuesListElement.scrollHeight;
+  issueNameInputElement.focus();
+}
+
 // Enables or disables the submit button depending on the values of the input
 // fields.
 function toggleButton() {
@@ -270,6 +395,24 @@ function toggleButton() {
     submitButtonElement.removeAttribute('disabled');
   } else {
     submitButtonElement.setAttribute('disabled', 'true');
+  }
+}
+
+function toggleButtonIssue() {
+  if (issueNameInputElement.value &&
+    issueDescriptionInputElement.value &&
+    issueMemberInputElement.value) {
+    submitIssueButtonElement.removeAttribute('disabled');
+  } else {
+    submitIssueButtonElement.setAttribute('disabled', 'true');
+  }
+}
+
+function toggleButtonDeadline() {
+  if (deadlineInputElement.value) {
+    submitDeadlineButtonElement.removeAttribute('disabled');
+  } else {
+    submitDeadlineButtonElement.setAttribute('disabled', 'true');
   }
 }
 
@@ -287,9 +430,15 @@ checkSetup();
 
 // Shortcuts to DOM Elements.
 var messageListElement = document.getElementById('messages');
+var issuesListElement = document.getElementById('issues');
 var messageFormElement = document.getElementById('message-form');
 var messageInputElement = document.getElementById('message');
 var submitButtonElement = document.getElementById('submit');
+var issueFormElement = document.getElementById('issue-form');
+var issueNameInputElement = document.getElementById('issue-name');
+var issueDescriptionInputElement = document.getElementById('issue-description');
+var issueMemberInputElement = document.getElementById('issue-member');
+var submitIssueButtonElement = document.getElementById('submit-issue');
 var imageButtonElement = document.getElementById('submitImage');
 var imageFormElement = document.getElementById('image-form');
 var mediaCaptureElement = document.getElementById('mediaCapture');
@@ -298,15 +447,46 @@ var userNameElement = document.getElementById('user-name');
 var signInButtonElement = document.getElementById('sign-in');
 var signOutButtonElement = document.getElementById('sign-out');
 var signInSnackbarElement = document.getElementById('must-signin-snackbar');
+var currentDateElement = document.getElementById('current-date');
+var deadlineElement = document.getElementById('deadline');
+var deadlineFormElement = document.getElementById('deadline-form');
+var deadlineInputElement = document.getElementById('deadline-days');
+var submitDeadlineButtonElement = document.getElementById('submit-deadline');
+
+// Print current date
+var current_date =  new Date();
+var current_y = current_date.getFullYear();
+var current_m = current_date.getMonth() + 1;
+var current_d = current_date.getDate();
+
+currentDateElement.innerHTML = "Today: " + current_m + "/" + current_d + "/" + current_y;
+
+// Print deadline
+deadlineElement.innerHTML = "There isn't a deadline";
 
 // Saves message on form submit.
 messageFormElement.addEventListener('submit', onMessageFormSubmit);
+issueFormElement.addEventListener('submit', onIssueFormSubmit);
+deadlineFormElement.addEventListener('submit', onDeadlineFormSubmit);
+
 signOutButtonElement.addEventListener('click', signOut);
 signInButtonElement.addEventListener('click', signIn);
 
 // Toggle for the button.
 messageInputElement.addEventListener('keyup', toggleButton);
 messageInputElement.addEventListener('change', toggleButton);
+
+issueNameInputElement.addEventListener('keyup', toggleButtonIssue);
+issueNameInputElement.addEventListener('change', toggleButtonIssue);
+
+issueDescriptionInputElement.addEventListener('keyup', toggleButtonIssue);
+issueDescriptionInputElement.addEventListener('change', toggleButtonIssue);
+
+issueMemberInputElement.addEventListener('keyup', toggleButtonIssue);
+issueMemberInputElement.addEventListener('change', toggleButtonIssue);
+
+deadlineInputElement.addEventListener('keyup', toggleButtonDeadline);
+deadlineInputElement.addEventListener('change', toggleButtonDeadline);
 
 // Events for image upload.
 imageButtonElement.addEventListener('click', function(e) {
@@ -320,3 +500,9 @@ initFirebaseAuth();
 
 // We load currently existing chat messages and listen to new ones.
 loadMessages();
+
+// We load currently existing issues and listen to new ones.
+loadIssues();
+
+// We load currently existing deadline and listen to new ones.
+loadDeadline();

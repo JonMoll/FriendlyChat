@@ -199,3 +199,22 @@ main, #messages-card {
   top: -1px;
   margin-right: 5px;
 }
+
+.date-today {
+  color: #0288d1;
+}
+
+.date-deadline {
+  color: #0288d1;
+}
+
+.issue-name {
+  font-size: 20px;
+  color: #0288d1;
+}
+
+.issue-member {
+  font-style: italic;
+  color: #039be5;
+}
+

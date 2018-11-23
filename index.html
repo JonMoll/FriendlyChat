@@ -98,6 +98,72 @@
         </div>
       </div>
 
+      <!-- Date -->
+      <div id="date-card" class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop">
+        <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <div id="date">
+            <h2> Date </h2>
+            <div class="date-today">
+              <p id="current-date"> </p>
+            </div>
+            <div class="date-deadline">
+              <p id="deadline"> </p>
+            </div>
+          </div>
+          <form id="deadline-form" action="#">
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+              <input class="mdl-textfield__input" type="number" id="deadline-days">
+              <label class="mdl-textfield__label" for="deadline-days"> Days for the deadline </label>
+            </div>
+            <button id="submit-deadline" disabled type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+              Set deadline
+            </button>
+          </form>
+          <br>
+        </div>
+      </div>
+
+      <!-- Issues -->
+      <div id="issues-card" class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop">
+        <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <h2> Issues </h2>
+          <div id="issues">
+            <span id="issue-filler"></span>
+          </div>
+          <br>
+        </div>
+      </div>
+
+      <div id="send-issues-card" class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop">
+        <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <h2> New Issue </h2>
+          <form id="issue-form" action="#">
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+              <input class="mdl-textfield__input" type="text" id="issue-name">
+              <label class="mdl-textfield__label" for="issue-name">Issue name</label>
+            </div>
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+              <input class="mdl-textfield__input" type="text" id="issue-description">
+              <label class="mdl-textfield__label" for="issue-description">Description</label>
+            </div>
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+              <input class="mdl-textfield__input" type="text" id="issue-member">
+              <label class="mdl-textfield__label" for="issue-member">Assigned member</label>
+            </div>
+            <button id="submit-issue" disabled type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+              Create issue
+            </button>
+          </form>
+          <br>
+        </div>
+      </div>
+
+      <p> Advertising:
+        <a href="https://www.w3schools.com">
+          <img border="0" src="images/advertising.png" width="100%">
+        </a>
+      </p>
+
       <div id="must-signin-snackbar" class="mdl-js-snackbar mdl-snackbar">
         <div class="mdl-snackbar__text"></div>
         <button class="mdl-snackbar__action" type="button"></button>
