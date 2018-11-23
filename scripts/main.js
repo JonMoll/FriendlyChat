@@ -49,12 +49,14 @@ function isUserSignedIn() {
     return !!firebase.auth().currentUser;
 }
 
+var ImportantMessages=false
+var Tasks = [];
+
 // Loads chat messages history and listens for upcoming ones.
 function loadMessages() {
-    // Loads the last 12 messages and listen for new ones.
     var callback = function(snap) {
         var data = snap.val();
-        displayMessage(snap.key, data.name, data.text, data.profilePicUrl, data.imageUrl);
+	displayMessage(snap.key, data.name, data.text, data.profilePicUrl, data.imageUrl, data.tarea, ImportantMessages);
     };
 
     firebase.database().ref('/messages/').limitToLast(12).on('child_added', callback);
@@ -66,6 +68,7 @@ function loadIssues() {
   // Loads the last 12 issues and listen for new ones.
   var callback = function(snap) {
     var data = snap.val();
+    Tasks.push(data.name);
     displayIssue(snap.key, data.name, data.description, data.member);
   };
 
@@ -89,7 +92,81 @@ function loadDeadline() {
 
 // Saves a new message on the Firebase DB.
 function saveMessage(messageText) {
+    var i;
+    var tareaName="";
+    var existTarea=false;
+    for (i=0; i<messageText.length; i++){
+	if(existTarea){
+		tareaName+=messageText[i];
+	} else {
+		if(messageText[i]=='@'){
+			existTarea=true;
+		}
+	}
+    }
+	if(existTarea){
+		tareaName = tareaName.toLowerCase();
+		existTarea=false;
+		for (i=0; !existTarea && i<Tasks.length;i++){
+			var isEqual=true;
+			var tareacomp=Tasks[i];
+			tareacomp=tareacomp.toLowerCase();
+			if(tareacomp.length<=tareaName.length){
+				for (var j=0; j<Tasks[i].length; j++){
+					if(tareacomp[j]!=tareaName[j]){
+						isEqual=false;
+					}
+				}
+			} else {
+				isEqual=false;
+			}
+			if(isEqual){
+				existTarea=true;
+				tareaName=Tasks[i];
+			}
+		}
+		if(existTarea){
+			var newMessage="";
+			for (i=0;i<messageText.length;i++){
+				if(messageText[i]=='@'){
+					newMessage+="["+tareaName+"]";
+					i+=tareaName.length;
+				} else {
+					newMessage+=messageText[i];
+				}
+			}
+			messageText=newMessage;
+		}
+	}
+	if(!existTarea){
+		var newMessage="";
+	    for (i=0; i<messageText.length; i++){
+		if(existTarea){
+			if(messageText[i]!='*') {
+				tareaName+=messageText[i];
+				newMessage+=messageText[i];
+			} else {
+				newMessage+="}";
+				for (var j=i+1;j<messageText.length;j++){
+					newMessage+=messageText[j];
+				}
+				i=messageText.length;
+			}
+		} else {
+			if(messageText[i]=='*'){
+				existTarea=true;
+				newMessage+="{";
+			} else {
+				newMessage+=messageText[i];
+			}
+		}
+	    }
+		if(existTarea){
+			messageText=newMessage;
+		}
+	}
     // Add a new message entry to the Firebase Database.
+	if(!existTarea){
     return firebase.database().ref('/messages/').push({
         name: getUserName(),
         text: messageText,
@@ -97,6 +174,16 @@ function saveMessage(messageText) {
     }).catch(function(error) {
         console.error('Error writing new message to Firebase Database', error);
     });
+	} else {
+    return firebase.database().ref('/messages/').push({
+        name: getUserName(),
+        text: messageText,
+        profilePicUrl: getProfilePicUrl(),
+	tarea: tareaName
+    }).catch(function(error) {
+        console.error('Error writing new message to Firebase Database', error);
+    });
+	}
 }
 
 // Saves a new message on the Firebase DB.
@@ -213,6 +300,20 @@ function onMessageFormSubmit(e) {
   }
 }
 
+function onImportantFormSubmitImportant(e) {
+  e.preventDefault();
+  ImportantMessages=true
+  console.log("Importat-Message");
+  messageListElement.innerHTML="";
+  loadMessages();
+}
+
+function onAllFormSubmitImportant(e) {
+  e.preventDefault();
+  ImportantMessages=false;
+  loadMessages();
+}
+
 // Triggered when the send new issue form is submitted.
 function onIssueFormSubmit(e) {
   e.preventDefault();
@@ -320,9 +421,15 @@ var ISSUE_TEMPLATE =
 var LOADING_IMAGE_URL = 'https://www.google.com/images/spin-32.gif?a';
 
 // Displays a Message in the UI.
-function displayMessage(key, name, text, picUrl, imageUrl) {
+function displayMessage(key, name, text, picUrl, imageUrl, tarea, isImportant) {
   var div = document.getElementById(key);
   // If an element for that message does not exists yet we create it.
+  if(isImportant==true){
+	if(tarea){
+	} else {
+		return;
+	}
+  }
   if (!div) {
     var container = document.createElement('div');
     container.innerHTML = MESSAGE_TEMPLATE;
@@ -338,6 +445,12 @@ function displayMessage(key, name, text, picUrl, imageUrl) {
   if (text) { // If the message is text.
     messageElement.textContent = text;
     // Replace all line breaks by <br>.
+	if(tarea){
+	    messageElement.innerHTML = messageElement.innerHTML.replace(/{/g, '<b>');
+	    messageElement.innerHTML = messageElement.innerHTML.replace(/}/g, '</b>');
+	    messageElement.innerHTML = messageElement.innerHTML.replace(/\[/g, '<font color="Red"><i>');
+	    messageElement.innerHTML = messageElement.innerHTML.replace(/\]/g, '</i></font>');
+	}
     messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
   } else if (imageUrl) { // If the message is an image.
     var image = document.createElement('img');
@@ -398,6 +511,14 @@ function toggleButton() {
   }
 }
 
+function toggleButtonImportant() {
+  /*if (messageInputElement.value) {
+    submitButtonElement.removeAttribute('disabled');
+  } else {
+    submitButtonElement.setAttribute('disabled', 'true');
+  }*/
+}
+
 function toggleButtonIssue() {
   if (issueNameInputElement.value &&
     issueDescriptionInputElement.value &&
@@ -431,6 +552,8 @@ checkSetup();
 // Shortcuts to DOM Elements.
 var messageListElement = document.getElementById('messages');
 var issuesListElement = document.getElementById('issues');
+var importantFormElement = document.getElementById('important-form');
+var allFormElement = document.getElementById('all-form');
 var messageFormElement = document.getElementById('message-form');
 var messageInputElement = document.getElementById('message');
 var submitButtonElement = document.getElementById('submit');
@@ -453,6 +576,7 @@ var deadlineFormElement = document.getElementById('deadline-form');
 var deadlineInputElement = document.getElementById('deadline-days');
 var submitDeadlineButtonElement = document.getElementById('submit-deadline');
 
+
 // Print current date
 var current_date =  new Date();
 var current_y = current_date.getFullYear();
@@ -468,6 +592,9 @@ deadlineElement.innerHTML = "There isn't a deadline";
 messageFormElement.addEventListener('submit', onMessageFormSubmit);
 issueFormElement.addEventListener('submit', onIssueFormSubmit);
 deadlineFormElement.addEventListener('submit', onDeadlineFormSubmit);
+importantFormElement.addEventListener('submit',onImportantFormSubmitImportant);
+allFormElement.addEventListener('submit',onAllFormSubmitImportant);
+
 
 signOutButtonElement.addEventListener('click', signOut);
 signInButtonElement.addEventListener('click', signIn);
@@ -498,11 +625,14 @@ mediaCaptureElement.addEventListener('change', onMediaFileSelected);
 // initialize Firebase
 initFirebaseAuth();
 
-// We load currently existing chat messages and listen to new ones.
-loadMessages();
-
 // We load currently existing issues and listen to new ones.
 loadIssues();
 
 // We load currently existing deadline and listen to new ones.
 loadDeadline();
+
+// We load currently existing chat messages and listen to new ones.
+//if(!ImportantMessages){
+loadMessages();
+//}
+
