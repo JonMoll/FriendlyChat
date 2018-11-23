@@ -72,22 +72,34 @@
   </header>
 
   <main class="mdl-layout__content mdl-color--grey-100">
+
+
+
     <div id="messages-card-container" class="mdl-cell mdl-cell--12-col mdl-grid">
 
       <!-- Messages container -->
       <div id="messages-card" class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--6-col-tablet mdl-cell--6-col-desktop">
-  <div id="type-messages">
-  <form id="important-form" action="#">
-    <button id="submit-important" type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
-      Important
-    </button>
-</form>
-  <form id="all-form" action="#">
-    <button id="submit-all" type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
-      All
-    </button>
-</form>
-  </div>
+
+        <div id="type-messages">
+
+          <div style="display: inline-block; float: left; width: 50%">
+            <form id="important-form" action="#">
+              <button id="submit-important" type="submit" class="button-size50 mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+                Important
+              </button>
+            </form>
+          </div>
+
+          <div style="display: inline-block; float: right; width: 50%">
+            <form id="all-form" action="#">
+              <button id="submit-all" type="submit" class="button-size50 mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect">
+                All
+              </button>
+            </form>
+          </div>
+
+        </div>
+
         <div class="mdl-card__supporting-text mdl-color-text--grey-600">
           <div id="messages">
             <span id="message-filler"></span>

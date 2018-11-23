@@ -218,3 +218,8 @@ main, #messages-card {
   color: #039be5;
 }
 
+.button-size50 {
+  display: block;
+  width: 100%;
+}
+
