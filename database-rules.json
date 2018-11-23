@@ -14,6 +14,10 @@
       ".read": true,
       ".write": "auth !== null",
     },
+    "deadline": {
+      ".read": true,
+      ".write": "auth !== null",
+    },
     "fcmTokens": {
       ".read": false,
       ".write": true

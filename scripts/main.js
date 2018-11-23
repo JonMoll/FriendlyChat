@@ -66,11 +66,25 @@ function loadIssues() {
   // Loads the last 12 issues and listen for new ones.
   var callback = function(snap) {
     var data = snap.val();
-    displayIssue(snap.key, data.text);
+    displayIssue(snap.key, data.name, data.description, data.member);
   };
 
   firebase.database().ref('/issues/').limitToLast(12).on('child_added', callback);
   firebase.database().ref('/issues/').limitToLast(12).on('child_changed', callback);
+}
+
+// Loads deadline history and listens for upcoming ones.
+function loadDeadline() {
+  // Loads the last 12 issues and listen for new ones.
+  var callback = function(snap) {
+    var data = snap.val();
+    var days_left_int = parseInt(data.day) - current_d;
+    var days_left_str = "<br> (" + days_left_int + " days left)";
+    deadlineElement.innerHTML = "Deadline: " + data.month + "/" + data.day + "/" + data.year + days_left_str;
+  };
+
+  firebase.database().ref('/deadline/').limitToLast(12).on('child_added', callback);
+  firebase.database().ref('/deadline/').limitToLast(12).on('child_changed', callback);
 }
 
 // Saves a new message on the Firebase DB.
@@ -86,14 +100,26 @@ function saveMessage(messageText) {
 }
 
 // Saves a new message on the Firebase DB.
-function saveIssue(issueNameText) {
+function saveIssue(issueNameText, issueDescriptionText, issueMemberText) {
   // Add a new message entry to the Firebase Database.
   return firebase.database().ref('/issues/').push({
-    name: getUserName(),
-    text: issueNameText,
-    profilePicUrl: getProfilePicUrl()
+    name: issueNameText,
+    description: issueDescriptionText,
+    member: issueMemberText
   }).catch(function(error) {
-    console.error('Error writing new message to Firebase Database', error);
+    console.error('Error writing new issue to Firebase Database', error);
+  });
+}
+
+// Saves a new deadline on the Firebase DB.
+function saveDeadline(month, day, year) {
+  // Add a new message entry to the Firebase Database.
+  return firebase.database().ref('/deadline/').push({
+    month: month,
+    day: day,
+    year: year
+  }).catch(function(error) {
+    console.error('Error writing new deadline to Firebase Database', error);
   });
 }
 
@@ -191,11 +217,31 @@ function onMessageFormSubmit(e) {
 function onIssueFormSubmit(e) {
   e.preventDefault();
   // Check that the user entered a message and is signed in.
-  if (issueNameInputElement.value && checkSignedInWithMessage()) {
-    saveIssue(issueNameInputElement.value).then(function() {
+  if (issueNameInputElement.value &&
+      issueDescriptionInputElement.value &&
+      issueMemberInputElement.value &&
+      checkSignedInWithMessage()) {
+    saveIssue(issueNameInputElement.value,
+              issueDescriptionInputElement.value,
+              issueMemberInputElement.value).then(function() {
       // Clear message text field and re-enable the SEND button.
       resetMaterialTextfield(issueNameInputElement);
-      toggleButton();
+      resetMaterialTextfield(issueDescriptionInputElement);
+      resetMaterialTextfield(issueMemberInputElement);
+      toggleButtonIssue();
+    });
+  }
+}
+
+// Triggered when the send new deadline form is submitted.
+function onDeadlineFormSubmit(e) {
+  e.preventDefault();
+  // Check that the user entered a message and is signed in.
+  if (deadlineInputElement.value && checkSignedInWithMessage()) {
+    saveDeadline(current_m, current_d + parseInt(deadlineInputElement.value), current_y).then(function() {
+      // Clear message text field and re-enable the SEND button.
+      resetMaterialTextfield(deadlineInputElement);
+      toggleButtonDeadline();
     });
   }
 }
@@ -265,7 +311,9 @@ var MESSAGE_TEMPLATE =
 // Template for messages.
 var ISSUE_TEMPLATE =
   '<div class="message-container">' +
-  '<div class="message"></div>' +
+  '<div class="issue-name"></div>' +
+  '<div class="issue-description"></div>' +
+  '<div class="issue-member"></div>' +
   '</div>';
 
 // A loading image URL.
@@ -307,7 +355,7 @@ function displayMessage(key, name, text, picUrl, imageUrl) {
 }
 
 // Displays a Issues in the UI.
-function displayIssue(key, text) {
+function displayIssue(key, name, description, member) {
   var div = document.getElementById(key);
   // If an element for that issue does not exists yet we create it.
   if (!div) {
@@ -318,12 +366,22 @@ function displayIssue(key, text) {
     issuesListElement.appendChild(div);
   }
 
-  var messageElement = div.querySelector('.message');
-  if (text) { // If the message is text.
-    messageElement.textContent = text;
+  var messageElement = div.querySelector('.issue-name');
+  var descriptionElement = div.querySelector('.issue-description');
+  var memberElement = div.querySelector('.issue-member');
+
+  if (name) { // If the message is text.
+    messageElement.textContent = name;
     // Replace all line breaks by <br>.
     messageElement.innerHTML = messageElement.innerHTML.replace(/\n/g, '<br>');
   }
+  if (description) {
+    descriptionElement.textContent = description;
+  }
+  if (member) {
+    memberElement.textContent = "Assigned member: " + member;
+  }
+
   // Show the card fading-in and scroll to view the new message.
   setTimeout(function() {div.classList.add('visible')}, 1);
   issuesListElement.scrollTop = issuesListElement.scrollHeight;
@@ -338,11 +396,23 @@ function toggleButton() {
   } else {
     submitButtonElement.setAttribute('disabled', 'true');
   }
+}
 
-  if (issueNameInputElement.value) {
+function toggleButtonIssue() {
+  if (issueNameInputElement.value &&
+    issueDescriptionInputElement.value &&
+    issueMemberInputElement.value) {
     submitIssueButtonElement.removeAttribute('disabled');
   } else {
     submitIssueButtonElement.setAttribute('disabled', 'true');
+  }
+}
+
+function toggleButtonDeadline() {
+  if (deadlineInputElement.value) {
+    submitDeadlineButtonElement.removeAttribute('disabled');
+  } else {
+    submitDeadlineButtonElement.setAttribute('disabled', 'true');
   }
 }
 
@@ -366,6 +436,8 @@ var messageInputElement = document.getElementById('message');
 var submitButtonElement = document.getElementById('submit');
 var issueFormElement = document.getElementById('issue-form');
 var issueNameInputElement = document.getElementById('issue-name');
+var issueDescriptionInputElement = document.getElementById('issue-description');
+var issueMemberInputElement = document.getElementById('issue-member');
 var submitIssueButtonElement = document.getElementById('submit-issue');
 var imageButtonElement = document.getElementById('submitImage');
 var imageFormElement = document.getElementById('image-form');
@@ -375,10 +447,28 @@ var userNameElement = document.getElementById('user-name');
 var signInButtonElement = document.getElementById('sign-in');
 var signOutButtonElement = document.getElementById('sign-out');
 var signInSnackbarElement = document.getElementById('must-signin-snackbar');
+var currentDateElement = document.getElementById('current-date');
+var deadlineElement = document.getElementById('deadline');
+var deadlineFormElement = document.getElementById('deadline-form');
+var deadlineInputElement = document.getElementById('deadline-days');
+var submitDeadlineButtonElement = document.getElementById('submit-deadline');
+
+// Print current date
+var current_date =  new Date();
+var current_y = current_date.getFullYear();
+var current_m = current_date.getMonth() + 1;
+var current_d = current_date.getDate();
+
+currentDateElement.innerHTML = "Today: " + current_m + "/" + current_d + "/" + current_y;
+
+// Print deadline
+deadlineElement.innerHTML = "There isn't a deadline";
 
 // Saves message on form submit.
 messageFormElement.addEventListener('submit', onMessageFormSubmit);
 issueFormElement.addEventListener('submit', onIssueFormSubmit);
+deadlineFormElement.addEventListener('submit', onDeadlineFormSubmit);
+
 signOutButtonElement.addEventListener('click', signOut);
 signInButtonElement.addEventListener('click', signIn);
 
@@ -386,8 +476,17 @@ signInButtonElement.addEventListener('click', signIn);
 messageInputElement.addEventListener('keyup', toggleButton);
 messageInputElement.addEventListener('change', toggleButton);
 
-issueNameInputElement.addEventListener('keyup', toggleButton);
-issueNameInputElement.addEventListener('change', toggleButton);
+issueNameInputElement.addEventListener('keyup', toggleButtonIssue);
+issueNameInputElement.addEventListener('change', toggleButtonIssue);
+
+issueDescriptionInputElement.addEventListener('keyup', toggleButtonIssue);
+issueDescriptionInputElement.addEventListener('change', toggleButtonIssue);
+
+issueMemberInputElement.addEventListener('keyup', toggleButtonIssue);
+issueMemberInputElement.addEventListener('change', toggleButtonIssue);
+
+deadlineInputElement.addEventListener('keyup', toggleButtonDeadline);
+deadlineInputElement.addEventListener('change', toggleButtonDeadline);
 
 // Events for image upload.
 imageButtonElement.addEventListener('click', function(e) {
@@ -404,3 +503,6 @@ loadMessages();
 
 // We load currently existing issues and listen to new ones.
 loadIssues();
+
+// We load currently existing deadline and listen to new ones.
+loadDeadline();
